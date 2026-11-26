@@ -80,7 +80,7 @@ body.sent .s{text-decoration:underline dotted var(--line);text-underline-offset:
 <div id="app"></div>
 <script>
 'use strict';
-const VERSION = '0.1 (26.11.2026)';
+const VERSION = '0.3 (26.11.2026)';
 const KEY = 'muista-data', PKEY = 'muista-prefs';
 const COLLS = ['shelves', 'texts', 'notes', 'log'];
 const app = document.getElementById('app');
@@ -196,6 +196,25 @@ function splitSentences(p) {
   if (rest) out.push(rest);
   return out;
 }
+/* in Virke mode a bracketed part is its own segment – except citations, which stay with their sentence */
+function isCitation(c) {
+  if (/\b(1[5-9]\d{2}|20\d{2})[a-z]?\b|\bu\.å\.|\bn\.d\./u.test(c)) return true;
+  return !c.includes('_') && /^\p{Lu}[\p{L}'’.-]*(?:\s+(?:&|och|and|ja|et al\.|\p{Lu}[\p{L}'’.-]*))*$/u.test(c.trim());
+}
+function splitParens(s) {
+  const out = []; let last = 0, m;
+  const re = /\(([^()]+)\)\S*/g;
+  while ((m = re.exec(s))) {
+    if (isCitation(m[1].replace(/_/g, ''))) continue;
+    if (m.index > 0 && !/\s/.test(s[m.index - 1])) continue;
+    const before = s.slice(last, m.index).trim();
+    if (before) out.push(before);
+    out.push(m[0]); last = re.lastIndex;
+  }
+  const rest = s.slice(last).trim();
+  if (rest) out.push(rest);
+  return out;
+}
 const ALNUM = /[\p{L}\p{N}]/u;
 function initSeg(seg) {
   if (!ALNUM.test(seg)) return seg;
@@ -213,7 +232,7 @@ const initials = s => s.replace(/_/g, '').split(/\s+/).filter(Boolean).map(initT
 function parseBody(body) {
   return body.split(/\n+/).map(l => l.trim()).filter(Boolean).map(par => {
     let ital = false;
-    return splitSentences(par).map(s => {
+    return splitSentences(par).flatMap(splitParens).map(s => {
       const parts = s.split('_');
       let html = ital ? '<i>' : '';
       parts.forEach((part, i) => {
@@ -345,9 +364,9 @@ function viewPractice(id) {
   document.title = t.title + ' – Muista';
   const shelf = byId('shelves', t.shelfId);
   const paras = parseBody(t.body);
-  let h = bar(`<a class="b quiet" href="#/">← Hylly</a><span class="sep"></span><button type="button" class="b mode" data-m="full">Teksti</button><button type="button" class="b mode" data-m="ini">Initiaalit</button>`);
+  let h = bar(`<a class="b quiet" href="#/">← Hylly</a><span class="sep"></span><button type="button" class="b mode" data-m="full">Teksti</button><button type="button" class="b mode" data-m="ini">Alkukirjaimet</button>`);
   h += `<main class="wrap"><div class="ctl"><button type="button" class="b gr" data-g="p">Kappale</button><button type="button" class="b gr" data-g="s">Virke</button><span class="sep"></span><button type="button" class="b quiet sz" data-d="-3" aria-label="Pienempi teksti">A−</button><button type="button" class="b quiet sz" data-d="3" aria-label="Suurempi teksti">A+</button></div>
-  <p class="hint">Napauta tekstiä: se vaihtuu initiaaleiksi ja takaisin. Kappale vaihtaa koko kappaleen, Virke yhden virkkeen kerrallaan (kaksoispiste päättää virkkeen). Teksti ja Initiaalit ylhäällä vaihtavat koko tekstin.</p>
+  <p class="hint">Napauta tekstiä: se vaihtuu alkukirjaimiksi ja takaisin. Kappale vaihtaa koko kappaleen, Virke yhden virkkeen kerrallaan (kaksoispiste päättää virkkeen, ja sulkeet ovat oma osansa, paitsi lähdeviitteet). Teksti ja Alkukirjaimet ylhäällä vaihtavat koko tekstin.</p>
   <article class="ptext">${shelf ? `<p class="kicker">${esc(shelf.name)}</p>` : ''}<h1>${esc(t.title)}</h1><p class="meta" id="pmeta">${metaLine(t.id)}</p>`;
   paras.forEach((p, i) => {
     h += `<div class="p" role="button" tabindex="0" aria-label="Kappale ${i + 1}"><span class="n">${i + 1}</span>`;
