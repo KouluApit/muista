@@ -1,6 +1,6 @@
 // Muista service worker: keeps the app usable offline.
 // Serves the cached copy first and refreshes it in the background, so an update appears on the next start.
-const CACHE = 'muista-0.1';
+const CACHE = 'muista-0.3';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'atkinson-400.woff2', 'atkinson-700.woff2', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
