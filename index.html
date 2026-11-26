@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>Muista</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* Muista – calm reading and memorisation by initials.
+   Near-black on white / white on black, Atkinson Hyperlegible, large targets, no animation. */
+@font-face{font-family:"Atkinson Hyperlegible";font-style:normal;font-weight:400;font-display:swap;src:url(atkinson-400.woff2) format("woff2")}
+@font-face{font-family:"Atkinson Hyperlegible";font-style:normal;font-weight:700;font-display:swap;src:url(atkinson-700.woff2) format("woff2")}
+:root{color-scheme:light dark;
+  --bg:light-dark(#ffffff,#000000);--ink:light-dark(#111111,#ffffff);--acc:light-dark(#0b3d91,#ffd84d);
+  --line:light-dark(#c4c4c4,#4d4d4d);--muted:light-dark(#454545,#cccccc);--ini:light-dark(#eef3fb,#1a1a0a);
+  --danger:light-dark(#a00000,#ff9b9b);--fs:26px;--sticky:80px;
+  --font:"Atkinson Hyperlegible",Verdana,Tahoma,sans-serif}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:var(--sticky)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 20px/1.5 var(--font);overflow-x:clip;overflow-anchor:none}
+a{color:var(--acc)}
+.bar{position:sticky;top:0;z-index:2;background:var(--bg);border-bottom:2px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px max(4vw,12px)}
+.brand{font-weight:700;font-size:22px;padding:0 4px}
+.sep{flex:1 1 0}
+.wrap{max-width:900px;margin:0 auto;padding:14px max(4vw,12px) 90px}
+.b{display:inline-flex;align-items:center;justify-content:center;min-height:48px;min-width:48px;padding:6px 14px;border:2px solid var(--acc);border-radius:10px;background:var(--bg);color:var(--acc);font:700 18px/1.15 var(--font);cursor:pointer;text-decoration:none;text-align:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.b.primary,.b[aria-pressed=true]{background:var(--acc);color:var(--bg)}
+.b.quiet{border-color:var(--line);color:var(--ink)}
+.b.danger{border-color:var(--danger);color:var(--danger)}
+.b.danger.armed{background:var(--danger);color:var(--bg)}
+.b.big{min-height:56px;font-size:20px;padding:8px 22px}
+.b:disabled{opacity:.45;cursor:not-allowed}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.p:focus-visible{outline:4px solid var(--acc);outline-offset:2px}
+h1{font-size:28px;line-height:1.25;margin:.3em 0 .4em}
+h2{font-size:23px;line-height:1.3;margin:1.4em 0 .5em;padding-bottom:.25em;border-bottom:3px solid var(--line)}
+.texts{list-style:none;margin:0;padding:0}
+.row{display:block;padding:12px 14px;margin:0 0 10px;border:2px solid var(--line);border-radius:12px;color:var(--ink);text-decoration:none}
+.row:hover{border-color:var(--acc)}
+.tt{display:block;font-weight:700;font-size:21px;overflow-wrap:anywhere}
+.meta{display:block;color:var(--muted);font-size:17px;margin-top:2px}
+.empty,.hint{color:var(--muted);font-size:17px}
+.msg{font-weight:700;margin:10px 0}
+.msg:empty{display:none}
+.flash{border:2px solid var(--acc);border-radius:10px;padding:10px 14px;font-weight:700}
+#saveerr{background:var(--danger);color:var(--bg);padding:12px max(4vw,12px);font-weight:700}
+label.f{display:block;font-weight:700;margin:18px 0 6px}
+input[type=text],select,textarea{width:100%;font:400 20px/1.5 var(--font);color:var(--ink);background:var(--bg);border:2px solid var(--ink);border-radius:8px;padding:10px 12px;min-height:48px}
+textarea{resize:vertical}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.emptystate{margin-top:1em}
+section.tool{margin-bottom:2em}
+.shelfrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid var(--line)}
+.shelfrow input{flex:1 1 220px;width:auto}
+.shelfrow .count{color:var(--muted);font-size:17px;flex-basis:100%}
+.note{border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 12px}
+.nbody{white-space:pre-wrap;overflow-wrap:anywhere}
+.ndate{margin:0 0 6px;color:var(--muted);font-size:17px}
+/* practice */
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.ptext{font-size:var(--fs);line-height:1.7;letter-spacing:.06em;word-spacing:.25em}
+.ptext h1{font-size:calc(var(--fs) * 1.1);line-height:1.3;letter-spacing:.02em;word-spacing:.1em;margin:.3em 0 .3em;text-wrap:balance;overflow-wrap:anywhere}
+.ptext .kicker{margin:0;font-size:17px;color:var(--muted);letter-spacing:0;word-spacing:0}
+.ptext .meta{letter-spacing:0;word-spacing:0;padding-bottom:.6em;margin-bottom:.8em;border-bottom:3px solid var(--line)}
+.p{display:block;text-align:left;border-left:6px solid var(--line);padding:.35em 0 .35em .6em;margin:0 0 .8em;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overflow-wrap:anywhere}
+.p.has-i{border-left-color:var(--acc)}
+.n{font-weight:700;color:var(--acc);margin-right:.35em}
+.s{border-radius:4px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.s.i{background:var(--ini);box-shadow:0 0 0 2px var(--ini)}
+.ini{display:none}.s.i .ini{display:inline}.s.i .full{display:none}
+body.sent .s{text-decoration:underline dotted var(--line);text-underline-offset:.3em}
+.done{margin-top:2em;padding-top:1em;border-top:2px solid var(--line);display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.done .msg{margin:0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+const VERSION = '0.1 (26.11.2026)';
+const KEY = 'muista-data', PKEY = 'muista-prefs';
+const COLLS = ['shelves', 'texts', 'notes', 'log'];
+const app = document.getElementById('app');
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+const now = () => Date.now();
+
+/* ---------- data: one plain JSON document; every record has id + updated; deletions are tombstones ---------- */
+const emptyDb = () => ({format: 'muista', version: 1, shelves: [], texts: [], notes: [], log: []});
+function normalizeDb(d) {
+  const o = emptyDb();
+  for (const k of COLLS) o[k] = Array.isArray(d[k]) ? d[k].filter(r => r && typeof r.id === 'string') : [];
+  return o;
+}
+function loadDb() {
+  try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.format === 'muista') return normalizeDb(d); } catch (e) {}
+  return emptyDb();
+}
+let db = loadDb();
+let saveFailed = false;
+function save() {
+  try {
+    const s = JSON.stringify(db);
+    localStorage.setItem(KEY, s);
+    if (localStorage.getItem(KEY) !== s) throw new Error('verify');
+    saveFailed = false;
+  } catch (e) { saveFailed = true; }
+  let el = $('#saveerr');
+  if (saveFailed && !el) {
+    el = document.createElement('div'); el.id = 'saveerr'; el.setAttribute('role', 'alert');
+    el.textContent = 'Tallennus tälle laitteelle epäonnistui. Ota varmuuskopio Työkaluista heti.';
+    document.body.prepend(el);
+  } else if (!saveFailed && el) el.remove();
+  return !saveFailed;
+}
+const live = k => db[k].filter(r => !r.deleted);
+const byId = (k, id) => db[k].find(r => r.id === id && !r.deleted);
+function put(k, rec) {
+  rec.updated = now();
+  const i = db[k].findIndex(r => r.id === rec.id);
+  if (i < 0) db[k].push(rec); else db[k][i] = rec;
+}
+function remove(k, id) { put(k, {id, deleted: true}); }
+
+/* merge: union by id; the newer `updated` wins, so deletions travel as well */
+function merge(inc) {
+  const stats = {};
+  for (const k of COLLS) {
+    const s = {added: 0, updated: 0, removed: 0};
+    const map = new Map(db[k].map(r => [r.id, r]));
+    for (const r of inc[k]) {
+      const cur = map.get(r.id);
+      if (!cur) { map.set(r.id, r); if (!r.deleted) s.added++; }
+      else if ((r.updated || 0) > (cur.updated || 0)) {
+        map.set(r.id, r);
+        if (r.deleted && !cur.deleted) s.removed++;
+        else if (!r.deleted && cur.deleted) s.added++;
+        else if (!r.deleted) s.updated++;
+      }
+    }
+    db[k] = [...map.values()];
+    stats[k] = s;
+  }
+  return stats;
+}
+
+/* per-device preferences (not part of the library) */
+const prefs = Object.assign({fs: 26, gran: 'p', mode: 'full', lastShelf: null, lastBackup: null},
+  (() => { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } })());
+function savePrefs() { try { localStorage.setItem(PKEY, JSON.stringify(prefs)); } catch (e) {} }
+
+/* ---------- dates ---------- */
+function dayDiff(t) { const a = new Date(t); a.setHours(0, 0, 0, 0); const b = new Date(); b.setHours(0, 0, 0, 0); return Math.round((b - a) / 86400000); }
+const ago = t => { const d = dayDiff(t); return d <= 0 ? 'tänään' : d === 1 ? 'eilen' : d + ' päivää sitten'; };
+const clock = t => { const d = new Date(t); return d.getHours() + '.' + String(d.getMinutes()).padStart(2, '0'); };
+const dateFi = t => { const d = new Date(t); return d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear(); };
+const fi = (n, one, many) => n === 1 ? '1 ' + one : n + ' ' + many;
+function practiceStats(textId) {
+  const L = live('log').filter(e => e.textId === textId);
+  return {count: L.length, last: L.reduce((m, e) => Math.max(m, e.at || 0), 0)};
+}
+function metaLine(id) {
+  const s = practiceStats(id);
+  return s.count ? `Harjoiteltu viimeksi ${ago(s.last)} · ${fi(s.count, 'kerta', 'kertaa')}` : 'Ei vielä harjoiteltu';
+}
+
+/* ---------- text: stored as plain text; paragraphs on separate lines; _italics_; initials generated here ---------- */
+function normBody(t) {
+  return t.normalize('NFC').replace(/­/g, '').replace(/\r\n?/g, '\n').split('\n')
+    .map(l => l.replace(/[ \t ]+/g, ' ').trim()).filter(Boolean).join('\n\n');
+}
+function joinBrokenLines(t) {
+  return t.replace(/\r\n?/g, '\n').split(/\n[ \t]*\n/)
+    .map(p => p.replace(/(\p{Ll})-[ \t]*\n[ \t]*(\p{Ll})/gu, '$1$2').replace(/(\S)-[ \t]*\n[ \t]*(?=\S)/gu, '$1-').replace(/[ \t]*\n[ \t]*/g, ' ').trim())
+    .filter(Boolean).join('\n\n');
+}
+const NO_BREAK_AFTER = new Set(['t.ex.', 'bl.a.', 's.k.', 'd.v.s.', 'dvs.', 'e.g.', 'i.e.', 'esim.', 'ns.', 'ks.', 'vrt.', 'jfr.', 'dr.', 'mr.', 'mrs.', 'ms.', 'prof.', 's.', 'kap.', 'ca.', 'vs.', 'nr.', 'kl.']);
+const OPENER = /^[\p{Lu}_*(\["'“‘«]/u;
+/* a sentence ends at . ? ! when the next word starts a new sentence, and always at a colon */
+function splitSentences(p) {
+  const out = []; let start = 0; let m;
+  const re = /([.?!:]+)([_'"”’»)\]]*)(\s+)/gu;
+  while ((m = re.exec(p))) {
+    const end = m.index + m[1].length + m[2].length;
+    const after = p.slice(re.lastIndex);
+    const word = (p.slice(start, m.index + m[1].length).match(/\S+$/) || [''])[0].toLowerCase();
+    const brk = m[1].endsWith(':') || (OPENER.test(after) && !NO_BREAK_AFTER.has(word));
+    if (brk) { out.push(p.slice(start, end).trim()); start = re.lastIndex; }
+  }
+  const rest = p.slice(start).trim();
+  if (rest) out.push(rest);
+  return out;
+}
+const ALNUM = /[\p{L}\p{N}]/u;
+function initSeg(seg) {
+  if (!ALNUM.test(seg)) return seg;
+  const lead = seg.match(/^[^\p{L}\p{N}]*/u)[0];
+  const rest = seg.slice(lead.length);
+  const trail = rest.match(/[^\p{L}\p{N}]*$/u)[0];
+  const core = rest.slice(0, rest.length - trail.length);
+  const first = Array.from(core)[0];
+  const ini = /\p{N}/u.test(first) ? core.match(/^\p{N}{1,2}/u)[0] : first;
+  return lead + ini + trail;
+}
+const initToken = tok => ALNUM.test(tok) ? tok.split(/([-\/])/).map(x => (x === '-' || x === '/') ? x : initSeg(x)).join('') : tok;
+const initials = s => s.replace(/_/g, '').split(/\s+/).filter(Boolean).map(initToken).join(' ');
+/* paragraphs → sentences → {html, ini}; italics may run across sentence boundaries */
+function parseBody(body) {
+  return body.split(/\n+/).map(l => l.trim()).filter(Boolean).map(par => {
+    let ital = false;
+    return splitSentences(par).map(s => {
+      const parts = s.split('_');
+      let html = ital ? '<i>' : '';
+      parts.forEach((part, i) => {
+        if (i > 0) { ital = !ital; html += ital ? '<i>' : '</i>'; }
+        html += esc(part);
+      });
+      if (ital) html += '</i>';
+      return {html, ini: initials(s)};
+    });
+  });
+}
+
+/* ---------- shared UI pieces ---------- */
+const bar = inner => `<header class="bar" id="top">${inner}</header>`;
+let flash = '';
+function takeFlash() { const f = flash; flash = ''; return f ? `<p class="msg flash" role="status">${esc(f)}</p>` : ''; }
+function setSticky() { const t = $('#top'); if (t) document.documentElement.style.setProperty('--sticky', (t.offsetHeight + 8) + 'px'); }
+window.addEventListener('resize', setSticky);
+const sortedShelves = () => live('shelves').sort((a, b) => ((a.order || 0) - (b.order || 0)) || a.name.localeCompare(b.name, 'fi'));
+const nextOrder = () => live('shelves').reduce((m, s) => Math.max(m, s.order || 0), 0) + 10;
+
+function summary(st) {
+  const T = st.texts, S = st.shelves, N = st.notes, L = st.log, p = [];
+  if (T.added) p.push(fi(T.added, 'uusi teksti', 'uutta tekstiä'));
+  if (T.updated) p.push(fi(T.updated, 'päivitetty teksti', 'päivitettyä tekstiä'));
+  if (T.removed) p.push(fi(T.removed, 'poistettu teksti', 'poistettua tekstiä'));
+  if (S.added) p.push(fi(S.added, 'uusi hylly', 'uutta hyllyä'));
+  if (S.updated) p.push(fi(S.updated, 'päivitetty hylly', 'päivitettyä hyllyä'));
+  if (S.removed) p.push(fi(S.removed, 'poistettu hylly', 'poistettua hyllyä'));
+  if (N.added) p.push(fi(N.added, 'uusi muistiinpano', 'uutta muistiinpanoa'));
+  if (N.updated) p.push(fi(N.updated, 'päivitetty muistiinpano', 'päivitettyä muistiinpanoa'));
+  if (N.removed) p.push(fi(N.removed, 'poistettu muistiinpano', 'poistettua muistiinpanoa'));
+  if (L.added) p.push(fi(L.added, 'uusi harjoituskerta', 'uutta harjoituskertaa'));
+  if (L.removed) p.push(fi(L.removed, 'peruttu harjoituskerta', 'peruttua harjoituskertaa'));
+  return p.length ? 'Palautus valmis: ' + p.join(', ') + '.' : 'Varmuuskopiossa ei ollut mitään uutta tälle laitteelle.';
+}
+function pickAndImport(onDone) {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json,application/json,text/plain'; inp.hidden = true;
+  document.body.appendChild(inp);
+  inp.addEventListener('change', async () => {
+    const f = inp.files[0]; inp.remove();
+    if (!f) return;
+    let obj;
+    try { obj = JSON.parse(await f.text()); } catch (e) { obj = null; }
+    if (!obj || obj.format !== 'muista' || !COLLS.every(k => Array.isArray(obj[k]))) {
+      onDone('Tiedostoa ei voitu lukea Muistan varmuuskopiona. Valitse tiedosto, jonka nimi alkaa ”muista-”.'); return;
+    }
+    if ((obj.version || 1) > 1) { onDone('Varmuuskopio on tehty Muistan uudemmalla versiolla. Päivitä sovellus ensin.'); return; }
+    const st = merge(normalizeDb(obj));
+    onDone(save() ? summary(st) : 'Palautus epäonnistui: tietoja ei voitu tallentaa tälle laitteelle.');
+  });
+  inp.click();
+}
+function exportBackup() {
+  const d = new Date(), z = n => String(n).padStart(2, '0');
+  const name = `muista-${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}.json`;
+  const data = Object.assign({}, db, {exported: d.toISOString()});
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  prefs.lastBackup = now(); savePrefs();
+  return name;
+}
+
+/* ---------- routing ---------- */
+let dirty = false, navCount = 0, libScroll = 0, current = '';
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+function route() {
+  if (current === '') libScroll = window.scrollY;
+  dirty = false;
+  const [r, a] = location.hash.replace(/^#\/?/, '').split('/');
+  current = r || '';
+  document.body.classList.remove('sent');
+  if (r === 'teksti') viewPractice(a);
+  else if (r === 'uusi') viewEditor(null, a);
+  else if (r === 'muokkaa') viewEditor(a);
+  else if (r === 'muistiinpanot') viewNotes();
+  else if (r === 'tyokalut') viewTools();
+  else { viewLibrary(); setSticky(); window.scrollTo(0, libScroll); return; }
+  setSticky(); window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', () => { navCount++; route(); });
+function goBack(fallback) { if (navCount > 0) history.back(); else location.replace(fallback); }
+
+/* ---------- library ---------- */
+function viewLibrary() {
+  document.title = 'Muista';
+  const shelves = sortedShelves(), texts = live('texts');
+  const ids = new Set(shelves.map(s => s.id));
+  const groups = shelves.map(s => ({s, list: texts.filter(t => t.shelfId === s.id)}));
+  const orphans = texts.filter(t => !ids.has(t.shelfId));
+  if (orphans.length) groups.push({s: {id: '', name: 'Ilman hyllyä'}, list: orphans});
+  let h = bar(`<span class="brand">Muista</span><span class="sep"></span><a class="b" href="#/muistiinpanot">Muistiinpanot</a><a class="b" href="#/tyokalut">Työkalut</a>`);
+  h += '<main class="wrap">' + takeFlash();
+  if (!groups.length) {
+    h += `<div class="emptystate"><h1>Kirjahylly on tyhjä</h1>
+      <p>Lisää ensimmäinen teksti, jonka haluat opetella ulkoa. Jos olet jo käyttänyt Muistaa toisella laitteella, palauta sen tiedot varmuuskopiosta.</p>
+      <div class="btnrow"><a class="b primary" href="#/uusi">Lisää teksti</a><button type="button" class="b" id="imp">Palauta varmuuskopiosta</button></div>
+      <p class="msg" id="impmsg" role="status"></p></div>`;
+  } else {
+    h += `<p><a class="b primary" href="#/uusi">Lisää teksti</a></p>`;
+    for (const g of groups) {
+      h += `<section><h2>${esc(g.s.name)}</h2>`;
+      if (g.list.length) {
+        h += '<ul class="texts">';
+        for (const t of g.list.sort((a, b) => a.title.localeCompare(b.title, 'fi', {numeric: true})))
+          h += `<li><a class="row" href="#/teksti/${esc(t.id)}"><span class="tt">${esc(t.title)}</span><span class="meta">${metaLine(t.id)}</span></a></li>`;
+        h += '</ul>';
+      } else h += `<p class="empty">Ei vielä tekstejä. <a href="#/uusi/${esc(g.s.id)}">Lisää teksti tähän hyllyyn</a></p>`;
+      h += '</section>';
+    }
+    h += `<p class="hint"><a href="#/tyokalut">Lisää, nimeä tai järjestä hyllyjä</a></p>`;
+  }
+  app.innerHTML = h + '</main>';
+  const imp = $('#imp');
+  if (imp) imp.addEventListener('click', () => pickAndImport(m => {
+    if (live('texts').length || live('shelves').length) { flash = m; viewLibrary(); setSticky(); }
+    else $('#impmsg').textContent = m;
+  }));
+}
+
+/* ---------- practice ---------- */
+function viewPractice(id) {
+  const t = byId('texts', id);
+  if (!t) { location.replace('#/'); return; }
+  document.title = t.title + ' – Muista';
+  const shelf = byId('shelves', t.shelfId);
+  const paras = parseBody(t.body);
+  let h = bar(`<a class="b quiet" href="#/">← Hylly</a><span class="sep"></span><button type="button" class="b mode" data-m="full">Teksti</button><button type="button" class="b mode" data-m="ini">Initiaalit</button>`);
+  h += `<main class="wrap"><div class="ctl"><button type="button" class="b gr" data-g="p">Kappale</button><button type="button" class="b gr" data-g="s">Virke</button><span class="sep"></span><button type="button" class="b quiet sz" data-d="-3" aria-label="Pienempi teksti">A−</button><button type="button" class="b quiet sz" data-d="3" aria-label="Suurempi teksti">A+</button></div>
+  <p class="hint">Napauta tekstiä: se vaihtuu initiaaleiksi ja takaisin. Kappale vaihtaa koko kappaleen, Virke yhden virkkeen kerrallaan (kaksoispiste päättää virkkeen). Teksti ja Initiaalit ylhäällä vaihtavat koko tekstin.</p>
+  <article class="ptext">${shelf ? `<p class="kicker">${esc(shelf.name)}</p>` : ''}<h1>${esc(t.title)}</h1><p class="meta" id="pmeta">${metaLine(t.id)}</p>`;
+  paras.forEach((p, i) => {
+    h += `<div class="p" role="button" tabindex="0" aria-label="Kappale ${i + 1}"><span class="n">${i + 1}</span>`;
+    h += p.map(s => `<span class="s"><span class="full">${s.html}</span><span class="ini">${esc(s.ini)}</span></span>`).join(' ');
+    h += '</div>';
+  });
+  h += `</article><div class="done"><button type="button" class="b primary big" id="log">Kirjaa harjoituskerta</button>
+    <p class="msg" id="logmsg" role="status"></p><a class="b quiet" href="#/muokkaa/${esc(t.id)}">Muokkaa tekstiä</a></div></main>`;
+  app.innerHTML = h;
+
+  const root = document.documentElement, top = $('#top');
+  let usedIni = false;
+  const applySize = () => { root.style.setProperty('--fs', prefs.fs + 'px'); savePrefs(); setSticky(); };
+  applySize();
+  $$('.sz').forEach(b => b.addEventListener('click', () => { prefs.fs = Math.max(15, Math.min(48, prefs.fs + Number(b.dataset.d))); applySize(); }));
+  const keepVisible = el => { const r = el.getBoundingClientRect(), hh = top.offsetHeight + 6; if (r.top < hh) window.scrollBy(0, r.top - hh); };
+  const pEls = $$('.p');
+  const mark = p => p.classList.toggle('has-i', !!p.querySelector('.s.i'));
+  const setP = (p, on) => { p.querySelectorAll('.s').forEach(x => x.classList.toggle('i', on)); mark(p); if (on) usedIni = true; };
+  const modes = $$('.mode');
+  const markMode = m => modes.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
+  const setAll = m => { pEls.forEach(p => setP(p, m === 'ini')); markMode(m); };
+  setAll(prefs.mode === 'ini' ? 'ini' : 'full');
+  modes.forEach(b => b.addEventListener('click', () => { setAll(b.dataset.m); prefs.mode = b.dataset.m; savePrefs(); }));
+  const grs = $$('.gr');
+  const setGran = g => { prefs.gran = g; document.body.classList.toggle('sent', g === 's'); grs.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.g === g))); savePrefs(); };
+  setGran(prefs.gran === 's' ? 's' : 'p');
+  grs.forEach(b => b.addEventListener('click', () => setGran(b.dataset.g)));
+  const act = (p, target) => {
+    if (window.getSelection && String(window.getSelection()).length) return;
+    const sent = target && target.closest('.s');
+    if (prefs.gran === 's' && sent) { sent.classList.toggle('i'); if (sent.classList.contains('i')) usedIni = true; mark(p); }
+    else setP(p, !!p.querySelector('.s:not(.i)'));
+    keepVisible(sent && prefs.gran === 's' ? sent : p);
+  };
+  pEls.forEach(p => {
+    p.addEventListener('click', e => act(p, e.target));
+    p.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(p, null); } });
+  });
+  const logmsg = $('#logmsg');
+  $('#log').addEventListener('click', () => {
+    const ev = {id: uid(), textId: t.id, at: now(), mode: usedIni ? 'ini' : 'full'};
+    put('log', ev);
+    if (!save()) { logmsg.textContent = 'Kirjaus epäonnistui: tallennus ei onnistunut.'; return; }
+    $('#pmeta').textContent = metaLine(t.id);
+    logmsg.innerHTML = `Harjoituskerta kirjattu tänään klo ${clock(ev.at)}. <button type="button" class="b quiet" id="undo">Peru kirjaus</button>`;
+    $('#undo').addEventListener('click', () => {
+      remove('log', ev.id); save();
+      $('#pmeta').textContent = metaLine(t.id);
+      logmsg.textContent = 'Kirjaus peruttu.';
+    });
+  });
+}
+
+/* ---------- add / edit text ---------- */
+function viewEditor(id, shelfHint) {
+  const t = id ? byId('texts', id) : null;
+  if (id && !t) { location.replace('#/'); return; }
+  document.title = (t ? 'Muokkaa tekstiä' : 'Uusi teksti') + ' – Muista';
+  const shelves = sortedShelves();
+  const pre = t ? t.shelfId : (shelfHint && byId('shelves', shelfHint) ? shelfHint : (byId('shelves', prefs.lastShelf) ? prefs.lastShelf : (shelves[0] || {}).id));
+  const opts = shelves.map(s => `<option value="${esc(s.id)}"${s.id === pre ? ' selected' : ''}>${esc(s.name)}</option>`).join('')
+    + `<option value="__new"${shelves.length ? '' : ' selected'}>Uusi hylly…</option>`;
+  let h = bar(`<button type="button" class="b quiet" id="cancel">Peruuta</button><span class="sep"></span><button type="button" class="b primary" id="save">Tallenna</button>`);
+  h += `<main class="wrap"><h1>${t ? 'Muokkaa tekstiä' : 'Uusi teksti'}</h1>
+    <label class="f" for="title">Otsikko</label><input type="text" id="title" value="${t ? esc(t.title) : ''}" autocomplete="off">
+    <label class="f" for="shelf">Hylly</label><select id="shelf">${opts}</select>
+    <div id="newshelfwrap"${shelves.length ? ' hidden' : ''}><label class="f" for="newshelf">Uuden hyllyn nimi</label><input type="text" id="newshelf" autocomplete="off"></div>
+    <label class="f" for="body">Teksti</label><textarea id="body" rows="16" spellcheck="false">${t ? esc(t.body) : ''}</textarea>
+    <p class="hint">Jokainen rivi on oma kappaleensa. Kursiivi merkitään alaviivoilla: _näin_. Tähti (*) näkyy sellaisenaan.</p>
+    <div class="btnrow"><button type="button" class="b" id="join">Yhdistä katkenneet rivit</button><button type="button" class="b quiet" id="unjoin" hidden>Kumoa yhdistäminen</button></div>
+    <p class="hint">PDF:stä kopioidussa tekstissä rivit katkeavat usein kesken kappaleen. Painike yhdistää rivit kappaleiksi; tyhjä rivi jää kappaleiden rajaksi. Tarkista tulos.</p>
+    <p class="msg" id="emsg" role="status"></p>`;
+  if (t) h += `<div class="btnrow" style="margin-top:2.5em"><button type="button" class="b danger" id="del">Poista teksti</button></div>`;
+  app.innerHTML = h + '</main>';
+
+  const sel = $('#shelf'), wrap = $('#newshelfwrap'), body = $('#body'), emsg = $('#emsg');
+  ['title', 'newshelf', 'body'].forEach(k => $('#' + k).addEventListener('input', () => { dirty = true; }));
+  sel.addEventListener('change', () => { dirty = true; wrap.hidden = sel.value !== '__new'; if (!wrap.hidden) $('#newshelf').focus(); });
+  let before = null;
+  $('#join').addEventListener('click', () => {
+    before = body.value; body.value = joinBrokenLines(body.value); dirty = true;
+    $('#unjoin').hidden = false; emsg.textContent = 'Rivit yhdistetty. Tarkista kappalejako.';
+  });
+  $('#unjoin').addEventListener('click', () => { if (before !== null) body.value = before; $('#unjoin').hidden = true; emsg.textContent = 'Yhdistäminen kumottu.'; });
+  $('#cancel').addEventListener('click', () => {
+    if (dirty && !confirm('Hylätäänkö tallentamattomat muutokset?')) return;
+    dirty = false; goBack(t ? '#/teksti/' + t.id : '#/');
+  });
+  $('#save').addEventListener('click', () => {
+    const title = $('#title').value.trim(), text = normBody(body.value);
+    if (!title) { emsg.textContent = 'Anna tekstille otsikko.'; $('#title').focus(); return; }
+    if (!text) { emsg.textContent = 'Teksti on tyhjä.'; body.focus(); return; }
+    let shelfId = sel.value;
+    if (shelfId === '__new') {
+      const name = $('#newshelf').value.trim();
+      if (!name) { emsg.textContent = 'Anna uudelle hyllylle nimi.'; $('#newshelf').focus(); return; }
+      const s = {id: uid(), name, order: nextOrder(), created: now()};
+      put('shelves', s); shelfId = s.id;
+    }
+    const rec = t ? Object.assign({}, t, {title, body: text, shelfId}) : {id: uid(), title, body: text, shelfId, created: now()};
+    put('texts', rec);
+    if (!save()) { emsg.textContent = 'Tallennus epäonnistui.'; return; }
+    prefs.lastShelf = shelfId; savePrefs();
+    dirty = false;
+    location.replace('#/teksti/' + rec.id);
+  });
+  const del = $('#del');
+  if (del) del.addEventListener('click', () => {
+    if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = 'Vahvista: poista teksti pysyvästi'; return; }
+    remove('texts', t.id); save(); dirty = false;
+    flash = `Teksti ”${t.title}” poistettu.`;
+    location.replace('#/');
+  });
+}
+
+/* ---------- notes ---------- */
+let editingNote = null;
+function viewNotes(msg) {
+  document.title = 'Muistiinpanot – Muista';
+  const notes = live('notes').sort((a, b) => (b.created || 0) - (a.created || 0));
+  let h = bar(`<a class="b quiet" href="#/">← Hylly</a><span class="sep"></span><span class="brand">Muistiinpanot</span>`);
+  h += `<main class="wrap"><label class="f" for="newnote">Uusi muistiinpano</label><textarea id="newnote" rows="4"></textarea>
+    <div class="btnrow"><button type="button" class="b primary" id="addnote">Tallenna muistiinpano</button></div>
+    <p class="msg" id="nmsg" role="status">${msg ? esc(msg) : ''}</p>`;
+  if (!notes.length) h += `<p class="empty">Ei vielä muistiinpanoja. Kirjoita tähän esimerkiksi tekstejä, jotka haluat myöhemmin lisätä Muistaan.</p>`;
+  for (const n of notes) {
+    const stamp = dateFi(n.created) + ' klo ' + clock(n.created) + (n.updated - n.created > 60000 ? ' · muokattu ' + dateFi(n.updated) : '');
+    if (n.id === editingNote) {
+      h += `<article class="note"><p class="ndate">${stamp}</p><label class="f" for="ednote" style="margin-top:0">Muokkaa muistiinpanoa</label><textarea id="ednote" rows="5">${esc(n.body)}</textarea>
+        <div class="btnrow"><button type="button" class="b primary" id="savenote">Tallenna</button><button type="button" class="b quiet" id="cancelnote">Peruuta</button><span class="sep"></span><button type="button" class="b danger" id="delnote">Poista</button></div></article>`;
+    } else {
+      h += `<article class="note"><p class="ndate">${stamp}</p><div class="nbody">${esc(n.body)}</div><div class="btnrow"><button type="button" class="b quiet" data-edit="${esc(n.id)}">Muokkaa</button></div></article>`;
+    }
+  }
+  app.innerHTML = h + '</main>';
+  $('#newnote').addEventListener('input', () => { dirty = true; });
+  $('#addnote').addEventListener('click', () => {
+    const v = $('#newnote').value.trim();
+    if (!v) { $('#nmsg').textContent = 'Muistiinpano on tyhjä.'; return; }
+    put('notes', {id: uid(), body: v, created: now()});
+    dirty = false;
+    viewNotes(save() ? 'Muistiinpano tallennettu.' : 'Tallennus epäonnistui.');
+  });
+  $$('[data-edit]').forEach(b => b.addEventListener('click', () => { editingNote = b.dataset.edit; viewNotes(); const e = $('#ednote'); e.focus(); e.scrollIntoView({block: 'center'}); }));
+  if (editingNote && $('#ednote')) {
+    $('#ednote').addEventListener('input', () => { dirty = true; });
+    $('#savenote').addEventListener('click', () => {
+      const v = $('#ednote').value.trim(), n = byId('notes', editingNote);
+      if (!v) { $('#nmsg').textContent = 'Muistiinpano on tyhjä. Poista se, jos et tarvitse sitä.'; return; }
+      put('notes', Object.assign({}, n, {body: v}));
+      editingNote = null; dirty = false;
+      viewNotes(save() ? 'Muutokset tallennettu.' : 'Tallennus epäonnistui.');
+    });
+    $('#cancelnote').addEventListener('click', () => { editingNote = null; dirty = false; viewNotes(); });
+    const dn = $('#delnote');
+    dn.addEventListener('click', () => {
+      if (!dn.classList.contains('armed')) { dn.classList.add('armed'); dn.textContent = 'Vahvista poisto'; return; }
+      remove('notes', editingNote); editingNote = null; dirty = false;
+      viewNotes(save() ? 'Muistiinpano poistettu.' : 'Tallennus epäonnistui.');
+    });
+  }
+}
+
+/* ---------- tools: shelves and backup ---------- */
+function viewTools(shelfMsg, backupMsg) {
+  document.title = 'Työkalut – Muista';
+  const shelves = sortedShelves(), texts = live('texts');
+  let h = bar(`<a class="b quiet" href="#/">← Hylly</a><span class="sep"></span><span class="brand">Työkalut</span>`);
+  h += `<main class="wrap"><section class="tool"><h2 style="margin-top:.6em">Hyllyt</h2>`;
+  if (!shelves.length) h += `<p class="empty">Ei vielä hyllyjä.</p>`;
+  shelves.forEach((s, i) => {
+    const n = texts.filter(t => t.shelfId === s.id).length;
+    h += `<div class="shelfrow" data-id="${esc(s.id)}"><input type="text" class="sname" value="${esc(s.name)}" aria-label="Hyllyn nimi">
+      <button type="button" class="b quiet up" aria-label="Siirrä ylemmäs"${i === 0 ? ' disabled' : ''}>↑</button>
+      <button type="button" class="b quiet down" aria-label="Siirrä alemmas"${i === shelves.length - 1 ? ' disabled' : ''}>↓</button>
+      <button type="button" class="b danger delshelf"${n ? ' disabled' : ''}>Poista</button>
+      <span class="count">${n ? fi(n, 'teksti', 'tekstiä') + ' · siirrä tai poista tekstit ennen hyllyn poistamista' : 'Tyhjä hylly'}</span></div>`;
+  });
+  h += `<label class="f" for="addname">Uusi hylly</label><div class="shelfrow" style="border:0"><input type="text" id="addname" autocomplete="off"><button type="button" class="b" id="addshelf">Lisää hylly</button></div>
+    <p class="hint">Hyllyn nimi tallentuu, kun siirryt pois nimikentästä tai painat Enter.</p>
+    <p class="msg" id="smsg" role="status">${shelfMsg ? esc(shelfMsg) : ''}</p></section>`;
+  h += `<section class="tool"><h2>Varmuuskopio</h2>
+    <p>Tiedot ovat vain tällä laitteella. Varmuuskopio on tavallinen tekstitiedosto (JSON), jonka voi avata millä tahansa tekstieditorilla.</p>
+    <div class="btnrow"><button type="button" class="b primary" id="exp">Vie varmuuskopioon</button><button type="button" class="b" id="imp">Palauta varmuuskopiosta</button></div>
+    <p class="hint">${prefs.lastBackup ? 'Viimeisin varmuuskopio tältä laitteelta: ' + ago(prefs.lastBackup) + ' klo ' + clock(prefs.lastBackup) + '.' : 'Tältä laitteelta ei ole vielä otettu varmuuskopiota.'}</p>
+    <p class="hint">Palautus yhdistää varmuuskopion tämän laitteen tietoihin. Uudet tekstit, muistiinpanot ja harjoituskerrat lisätään. Jos samaa tekstiä on muokattu molemmilla laitteilla, uudempi versio jää voimaan. Toisella laitteella poistettu teksti poistuu myös täältä.</p>
+    <p class="msg" id="bmsg" role="status">${backupMsg ? esc(backupMsg) : ''}</p></section>
+    <section class="tool"><h2>Tietoja</h2><p>Muista, versio ${VERSION}</p></section></main>`;
+  app.innerHTML = h;
+
+  const smsg = $('#smsg');
+  const normalizeOrder = () => sortedShelves().forEach((s, i) => { s.order = (i + 1) * 10; });
+  $$('.shelfrow[data-id]').forEach(row => {
+    const id = row.dataset.id, inp = $('.sname', row);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
+    inp.addEventListener('change', () => {
+      const s = byId('shelves', id), v = inp.value.trim();
+      if (!v) { inp.value = s.name; smsg.textContent = 'Hyllyn nimi ei voi olla tyhjä.'; return; }
+      put('shelves', Object.assign({}, s, {name: v}));
+      smsg.textContent = save() ? `Hyllyn nimi tallennettu: ${v}.` : 'Tallennus epäonnistui.';
+    });
+    const move = dir => {
+      normalizeOrder();
+      const list = sortedShelves(), i = list.findIndex(s => s.id === id), j = i + dir;
+      if (j < 0 || j >= list.length) return;
+      const a = list[i], b = list[j], oa = a.order;
+      put('shelves', Object.assign({}, a, {order: b.order}));
+      put('shelves', Object.assign({}, b, {order: oa}));
+      viewTools(save() ? `Hylly ”${a.name}” siirretty.` : 'Tallennus epäonnistui.');
+      const btn = $(`.shelfrow[data-id="${CSS.escape(id)}"] .${dir < 0 ? 'up' : 'down'}`);
+      if (btn && !btn.disabled) btn.focus();
+    };
+    $('.up', row).addEventListener('click', () => move(-1));
+    $('.down', row).addEventListener('click', () => move(1));
+    const del = $('.delshelf', row);
+    del.addEventListener('click', () => {
+      if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = 'Vahvista poisto'; return; }
+      const s = byId('shelves', id);
+      remove('shelves', id);
+      viewTools(save() ? `Hylly ”${s.name}” poistettu.` : 'Tallennus epäonnistui.');
+    });
+  });
+  const add = () => {
+    const v = $('#addname').value.trim();
+    if (!v) { smsg.textContent = 'Kirjoita uuden hyllyn nimi.'; $('#addname').focus(); return; }
+    put('shelves', {id: uid(), name: v, order: nextOrder(), created: now()});
+    viewTools(save() ? `Hylly ”${v}” lisätty.` : 'Tallennus epäonnistui.');
+  };
+  $('#addshelf').addEventListener('click', add);
+  $('#addname').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+  $('#exp').addEventListener('click', () => {
+    const name = exportBackup();
+    viewTools(null, `Varmuuskopio tallennettu tiedostoon ${name} (Lataukset-kansio).`);
+  });
+  $('#imp').addEventListener('click', () => pickAndImport(m => viewTools(null, m)));
+}
+
+/* ---------- start ---------- */
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+route();
+</script>
+</body>
+</html>
